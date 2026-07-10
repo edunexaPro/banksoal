@@ -1,7 +1,7 @@
 {
   "name": "Edunexa Bank Soal",
-  "short_name": "Bank Soal",
-  "start_url": "./",
+  "short_name": "Edunexa",
+  "start_url": "/",
   "display": "standalone",
   "background_color": "#0f172a",
   "theme_color": "#10b981",
