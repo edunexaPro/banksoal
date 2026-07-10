@@ -18,10 +18,16 @@
   <script src="https://unpkg.com/lucide@latest"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
   <style>
-    ::-webkit-scrollbar { width: 6px; height: 6px; }
-    ::-webkit-scrollbar-track { background: rgba(255, 255, 255, 0.1); }
-    ::-webkit-scrollbar-thumb { background: rgba(0, 0, 0, 0.15); border-radius: 10px; }
-    ::-webkit-scrollbar-thumb:hover { background: rgba(0, 0, 0, 0.25); }
+   /* Anda bisa menggunakan 10px atau 12px sesuai kenyamanan Anda */
+::-webkit-scrollbar { width: 12px; height: 12px; }
+
+/* Tambahkan sedikit ruang agar thumb tidak terlalu mepet dengan track */
+::-webkit-scrollbar-thumb { 
+  background: rgba(0, 0, 0, 0.15); 
+  border-radius: 10px; 
+  border: 2px solid transparent; /* Ini memberikan jarak antara thumb dan track */
+  background-clip: padding-box;  /* Agar border transparan tidak terwarnai */
+}
    
     /* CSS Print Ultimate: Memaksa browser merender semua halaman utuh */
     @media print {
