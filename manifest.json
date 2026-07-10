@@ -18,18 +18,5 @@
       "type": "image/png",
       "purpose": "any"
     }
-  ],
-  "screenshots": [
-    {
-      "src": "screenshot-mobile.png",
-      "sizes": "1080x1920",
-      "type": "image/png"
-    },
-    {
-      "src": "screenshot-desktop.png",
-      "sizes": "1920x1080",
-      "type": "image/png",
-      "form_factor": "wide"
-    }
   ]
 }
