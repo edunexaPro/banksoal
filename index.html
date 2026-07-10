@@ -134,12 +134,13 @@
            <p class="font-bold text-white tracking-wide" id="headerName">Nama Pengguna</p>
            <p class="text-xs text-emerald-300/70 font-medium" id="headerSchool">Nama Instansi</p>
          </div>
-        <button onclick="window.location.reload()" class="p-2.5 bg-white/5 border border-white/10 text-slate-300 hover:text-white hover:bg-white/20 rounded-xl transition-all flex items-center justify-center shadow-sm" title="Muat Ulang Halaman">
-           <i data-lucide="refresh-cw" class="w-4 h-4"></i>
-         </button>
-         <button onclick="handleLogout()" class="p-2.5 bg-red-500/10 text-red-400 border border-red-500/20 rounded-xl hover:bg-red-500/20 transition-all text-xs flex items-center gap-1.5 font-bold">
-           <i data-lucide="log-out" class="w-4 h-4"></i> Keluar
-         </button>
+        <button onclick="window.location.reload()" class="p-2 bg-white/5 border border-white/10 text-slate-300 hover:text-white hover:bg-white/20 rounded-xl transition-all" title="Refresh">
+  <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+</button>
+         <button onclick="handleLogout()" class="p-2 md:p-2.5 bg-red-500/10 text-red-400 border border-red-500/20 rounded-xl hover:bg-red-500/20 transition-all text-xs flex items-center gap-1.5 font-bold">
+  <i data-lucide="log-out" class="w-4 h-4"></i> 
+  <span class="hidden md:inline">Keluar</span>
+</button>
          <button onclick="toggleMobileMenu()" class="md:hidden p-2 text-white hover:bg-white/10 rounded-lg"><i data-lucide="menu" class="w-6 h-6"></i></button>
       </div>
     </header>
