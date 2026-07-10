@@ -12,7 +12,10 @@
     ::-webkit-scrollbar-track { background: rgba(255, 255, 255, 0.1); }
     ::-webkit-scrollbar-thumb { background: rgba(0, 0, 0, 0.15); border-radius: 10px; }
     ::-webkit-scrollbar-thumb:hover { background: rgba(0, 0, 0, 0.25); }
-
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#10b981">
+<link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/2991/2991107.png">
+    
     /* CSS Print Ultimate: Memaksa browser merender semua halaman utuh */
     @media print {
       @page {
@@ -1502,5 +1505,12 @@
       return html + `</div>`;
     }
   </script>
+  <script>
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('./sw.js')
+      .then(() => console.log('Service Worker Terdaftar!'))
+      .catch((err) => console.log('Gagal daftar SW:', err));
+  }
+</script>
 </body>
 </html>
