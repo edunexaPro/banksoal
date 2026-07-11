@@ -907,7 +907,29 @@ async function fetchGeminiEngine(prompt, schema, apiKey) {
       responseText = responseText.replace(/```json/gi, '').replace(/```/g, '').trim();
       
       return JSON.parse(responseText);
-    }    
+    } 
+    async function saveCurrentData() {
+      if(!appState.currentGenerated) return alert("Belum ada data instrumen soal untuk disimpan.");
+      
+      try {
+        const payload = {
+          createdBy: appState.user.username,
+          ownerName: appState.user.name,
+          type: appState.currentGenerated.type,
+          date: new Date().toISOString(),
+          title: `${appState.currentGenerated.config.jenisPenilaian} - ${appState.currentGenerated.config.mapel} (Kelas ${appState.currentGenerated.config.kelas})`,
+          data: appState.currentGenerated.data,
+          config: appState.currentGenerated.config
+        };
+
+        await addDoc(collection(db, "bank_soal"), payload);
+        alert("Sukses mengunggah dan menyimpan berkas ujian ke Cloud Database!");
+        updateCloudStats();
+      } catch (err) {
+        alert("Gagal mengunggah berkas ke server cloud.");
+        console.error(err);
+      }
+    }
     async function renderBankSoal() {
       if (!appState.user) return;
       const tbody = document.getElementById('bankTableBody');
