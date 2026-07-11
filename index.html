@@ -880,34 +880,32 @@
 
     // FUNGSI API YANG DIPERBAIKI: Dibungkus ke dalam fetchGeminiEngine
 async function fetchGeminiEngine(prompt, schema, apiKey) {
-      // 1. Injeksi aturan JSON ke dalam prompt
-      const finalPrompt = prompt + `\n\nATURAN MUTLAK: Output Anda WAJIB berupa JSON murni yang valid tanpa teks awalan/akhiran apapun. Ikuti struktur JSON schema berikut:\n${JSON.stringify(schema)}`;
+  // Gunakan alias universal 'gemini-flash' (akan otomatis diarahkan Google ke versi yang tersedia)
+  const endpointUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash:generateContent?key=${apiKey}`;
 
-      // 2. Gunakan model alias yang paling umum tersedia untuk semua API Key
-      // Kita gunakan 'gemini-1.5-flash' karena ini model standar yang paling luas aksesnya saat ini
-      const endpointUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+  const response = await fetch(endpointUrl, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      contents: [{ 
+        parts: [{ text: prompt + "\n\nJSON output only, no markdown formatting." }] 
+      }]
+    })
+  });
 
-      const response = await fetch(endpointUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: finalPrompt }] }]
-        })
-      });
+  if (!response.ok) {
+    const errorDetail = await response.text();
+    throw new Error(`API Error: ${errorDetail}`);
+  }
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Error API (${response.status}): ${errorText}`);
-      }
-
-      const data = await response.json();
-      let responseText = data.candidates[0].content.parts[0].text;
-      
-      // Bersihkan teks untuk memastikan JSON valid
-      responseText = responseText.replace(/```json/gi, '').replace(/```/g, '').trim();
-      
-      return JSON.parse(responseText);
-    } 
+  const data = await response.json();
+  let text = data.candidates[0].content.parts[0].text;
+  
+  // Membersihkan output dari markdown (agar tidak merusak JSON.parse)
+  text = text.replace(/```json/gi, '').replace(/```/g, '').trim();
+  return JSON.parse(text);
+} 
+    
     async function saveCurrentData() {
       if(!appState.currentGenerated) return alert("Belum ada data instrumen soal untuk disimpan.");
       
