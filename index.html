@@ -880,30 +880,190 @@
 
     // FUNGSI API YANG DIPERBAIKI: Dibungkus ke dalam fetchGeminiEngine
 async function fetchGeminiEngine(prompt, schema, apiKey) {
-  // Gunakan alias universal 'gemini-flash' (akan otomatis diarahkan Google ke versi yang tersedia)
-  const endpointUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash:generateContent?key=${apiKey}`;
 
-  const response = await fetch(endpointUrl, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      contents: [{ 
-        parts: [{ text: prompt + "\n\nJSON output only, no markdown formatting." }] 
-      }]
-    })
-  });
+    // ============================
+    // 1. Ambil daftar model
+    // ============================
+    const modelRes = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`
+    );
 
-  if (!response.ok) {
-    const errorDetail = await response.text();
-    throw new Error(`API Error: ${errorDetail}`);
-  }
+    const modelData = await modelRes.json();
 
-  const data = await response.json();
-  let text = data.candidates[0].content.parts[0].text;
-  
-  // Membersihkan output dari markdown (agar tidak merusak JSON.parse)
-  text = text.replace(/```json/gi, '').replace(/```/g, '').trim();
-  return JSON.parse(text);
+    if (!modelRes.ok) {
+        throw new Error(
+            "API Key tidak valid.\n\n" +
+            JSON.stringify(modelData, null, 2)
+        );
+    }
+
+    if (!modelData.models || modelData.models.length === 0) {
+        throw new Error("API Key ini tidak memiliki model Gemini.");
+    }
+
+    // ============================
+    // 2. Pilih model yang support generateContent
+    // ============================
+    const supportedModels = modelData.models.filter(m =>
+        m.supportedGenerationMethods &&
+        m.supportedGenerationMethods.includes("generateContent")
+    );
+
+    if (supportedModels.length === 0) {
+        throw new Error("Tidak ada model yang mendukung generateContent.");
+    }
+
+    // Urutkan model terbaik
+    supportedModels.sort((a, b) => {
+
+        const score = (name) => {
+
+            if (name.includes("gemini-2.5-flash")) return 100;
+            if (name.includes("gemini-2.5-pro")) return 95;
+            if (name.includes("gemini-2.0-flash")) return 90;
+            if (name.includes("gemini-1.5-flash")) return 80;
+            if (name.includes("gemini-1.5-pro")) return 70;
+
+            return 1;
+        };
+
+        return score(b.name) - score(a.name);
+
+    });
+
+    let lastError = "";
+
+    // ============================
+    // 3. Coba satu per satu
+    // ============================
+    for (const model of supportedModels) {
+
+        console.log("Mencoba model:", model.name);
+
+        const url =
+            `https://generativelanguage.googleapis.com/v1beta/${model.name}:generateContent?key=${apiKey}`;
+
+        // ============================
+        // Percobaan 1
+        // Pakai responseSchema
+        // ============================
+
+        try {
+
+            const res = await fetch(url, {
+
+                method: "POST",
+
+                headers: {
+                    "Content-Type": "application/json"
+                },
+
+                body: JSON.stringify({
+
+                    contents: [{
+                        parts: [{
+                            text: prompt
+                        }]
+                    }],
+
+                    generationConfig: {
+                        responseMimeType: "application/json",
+                        responseSchema: schema
+                    }
+
+                })
+
+            });
+
+            const json = await res.json();
+
+            if (res.ok) {
+
+                const text =
+                    json.candidates?.[0]?.content?.parts?.[0]?.text;
+
+                if (!text)
+                    throw new Error(JSON.stringify(json, null, 2));
+
+                return JSON.parse(text);
+
+            }
+
+            lastError = JSON.stringify(json, null, 2);
+
+        } catch (e) {
+
+            lastError = e.message;
+
+        }
+
+        // ============================
+        // Percobaan 2
+        // Tanpa responseSchema
+        // ============================
+
+        try {
+
+            const res = await fetch(url, {
+
+                method: "POST",
+
+                headers: {
+                    "Content-Type": "application/json"
+                },
+
+                body: JSON.stringify({
+
+                    contents: [{
+
+                        parts: [{
+
+                            text:
+                                prompt +
+                                "\n\nJawablah HANYA JSON yang valid. Jangan gunakan markdown."
+
+                        }]
+
+                    }]
+
+                })
+
+            });
+
+            const json = await res.json();
+
+            if (res.ok) {
+
+                let text =
+                    json.candidates?.[0]?.content?.parts?.[0]?.text;
+
+                if (!text)
+                    throw new Error(JSON.stringify(json, null, 2));
+
+                text = text
+                    .replace(/```json/gi, "")
+                    .replace(/```/g, "")
+                    .trim();
+
+                return JSON.parse(text);
+
+            }
+
+            lastError = JSON.stringify(json, null, 2);
+
+        } catch (e) {
+
+            lastError = e.message;
+
+        }
+
+    }
+
+    throw new Error(
+        "Semua model gagal digunakan.\n\n" +
+        lastError
+    );
+
 } 
     
     async function saveCurrentData() {
