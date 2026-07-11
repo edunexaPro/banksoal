@@ -880,30 +880,36 @@
 
     // FUNGSI API YANG DIPERBAIKI: Dibungkus ke dalam fetchGeminiEngine
  async function fetchGeminiEngine(prompt, schema, apiKey) {
-      // HANYA gunakan model 1.5 ke atas yang 100% mendukung fitur JSON Schema
+      // 1. Teknik Injeksi: Gabungkan schema langsung ke dalam prompt agar server tidak bingung
+      const finalPrompt = prompt + `\n\nATURAN MUTLAK: Output Anda WAJIB berupa JSON murni yang valid tanpa teks awalan/akhiran apapun. Ikuti struktur JSON schema berikut:\n${JSON.stringify(schema)}`;
+
+      // 2. Daftar model fallback (anti 404)
       const modelList = [
-        'gemini-1.5-flash',
-        'gemini-1.5-pro',
-        'gemini-1.5-flash-8b'
+        'gemini-1.5-flash', 
+        'gemini-1.5-pro', 
+        'gemini-pro'
       ];
       
       let lastErrorText = "";
 
       for (const model of modelList) {
         try {
-          // UPDATE PENTING: Menggunakan endpoint /v1/ (jalur resmi/stabil), bukan v1beta
-          const response = await fetch(`https://generativelanguage.googleapis.com/v1/models/${model}:generateContent?key=${apiKey}`, {
+          const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              contents: [{ parts: [{ text: prompt }] }],
-              generationConfig: { responseMimeType: "application/json", responseSchema: schema }
+              contents: [{ parts: [{ text: finalPrompt }] }]
+              // Parameter generationConfig DIHAPUS TOTAL untuk menghindari error 400 "Unknown Name"
             })
           });
 
           if (response.ok) {
             const data = await response.json();
-            const responseText = data.candidates[0].content.parts[0].text;
+            let responseText = data.candidates[0].content.parts[0].text;
+            
+            // 3. Pembersihan string: Hilangkan tag markdown ```json jika AI secara otomatis menambahkannya
+            responseText = responseText.replace(/```json/gi, '').replace(/```/g, '').trim();
+            
             return JSON.parse(responseText);
           }
 
@@ -911,23 +917,20 @@
           lastErrorText = `Error ${response.status} pada ${model}: ${errorText}`;
 
           if (response.status === 404) {
-            console.warn(`Model ${model} tidak ditemukan/ditolak. Lanjut ke model cadangan...`);
-            continue;
+            console.warn(`Model ${model} tidak ditemukan, beralih ke versi berikutnya...`);
+            continue; // Lanjut ke model berikutnya
           } else {
-            // Jika error karena parameter salah atau API Key limit (400, 403, 429)
             throw new Error(lastErrorText);
           }
         } catch (e) {
           lastErrorText = e.message;
-          if (e.message.includes("403") || e.message.includes("400") || e.message.includes("429")) {
-             throw e; 
-          }
+          // Lempar error jika masalahnya adalah API Key tidak valid (403)
+          if (e.message.includes("403")) throw e; 
         }
       }
 
-      throw new Error(`Semua versi model gagal dimuat. Pastikan API Key valid dan belum limit. Detail: ${lastErrorText}`);
-    }      
-    
+      throw new Error(`Gagal memuat AI. Detail: ${lastErrorText}`);
+    }    
     async function saveCurrentData() {
       if(!appState.currentGenerated) return alert("Belum ada data instrumen soal untuk disimpan.");
       
