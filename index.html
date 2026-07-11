@@ -883,40 +883,9 @@ async function fetchGeminiEngine(prompt, schema, apiKey) {
       // 1. Injeksi aturan JSON ke dalam prompt
       const finalPrompt = prompt + `\n\nATURAN MUTLAK: Output Anda WAJIB berupa JSON murni yang valid tanpa teks awalan/akhiran apapun. Ikuti struktur JSON schema berikut:\n${JSON.stringify(schema)}`;
 
-      // =====================================================================
-      // 2. TAHAP DISCOVERY: Cek model apa yang TERSEDIA untuk API Key ini
-      // =====================================================================
-      const checkModelsResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`);
-      
-      if (!checkModelsResponse.ok) {
-        throw new Error("Gagal memverifikasi API Key. Pastikan API Key yang dimasukkan valid dan aktif.");
-      }
-      
-      const modelsData = await checkModelsResponse.json();
-      let targetModel = null;
-
-      // Cari model yang mendukung "generateContent" dan prioritaskan seri "flash"
-      for (const model of modelsData.models) {
-        if (model.supportedGenerationMethods && model.supportedGenerationMethods.includes("generateContent")) {
-          // model.name biasanya memiliki format "models/gemini-x.x-flash"
-          if (model.name.includes("flash")) {
-            targetModel = model.name;
-            break; // Langsung pilih flash pertama yang ditemukan (karena lebih cepat/murah)
-          } else if (!targetModel && model.name.includes("pro")) {
-            targetModel = model.name; // Cadangan jika tidak ada flash
-          }
-        }
-      }
-
-      if (!targetModel) {
-        throw new Error("API Key ini tidak memiliki akses ke model teks (Flash/Pro) apa pun yang mendukung generateContent.");
-      }
-
-      // =====================================================================
-      // 3. TAHAP GENERATE: Gunakan model yang sudah PASTI valid
-      // =====================================================================
-      // targetModel sudah memuat string "models/..." jadi kita langsung pasang di URL
-      const endpointUrl = `https://generativelanguage.googleapis.com/v1beta/${targetModel}:generateContent?key=${apiKey}`;
+      // 2. Gunakan model alias yang paling umum tersedia untuk semua API Key
+      // Kita gunakan 'gemini-1.5-flash' karena ini model standar yang paling luas aksesnya saat ini
+      const endpointUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
 
       const response = await fetch(endpointUrl, {
         method: 'POST',
@@ -928,18 +897,18 @@ async function fetchGeminiEngine(prompt, schema, apiKey) {
 
       if (!response.ok) {
         const errorText = await response.text();
-        throw new Error(`Error saat Generate (${response.status}): ${errorText}`);
+        throw new Error(`Error API (${response.status}): ${errorText}`);
       }
 
-      // 4. Bersihkan dan Parse JSON
       const data = await response.json();
       let responseText = data.candidates[0].content.parts[0].text;
       
-      // Bersihkan sisa-sisa markdown agar parse JSON tidak gagal
+      // Bersihkan teks untuk memastikan JSON valid
       responseText = responseText.replace(/```json/gi, '').replace(/```/g, '').trim();
       
       return JSON.parse(responseText);
-    }
+    }    
+    
     async function renderBankSoal() {
       if (!appState.user) return;
       const tbody = document.getElementById('bankTableBody');
