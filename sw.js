@@ -1,4 +1,4 @@
-const CACHE_NAME = 'edunexa-store-v1'; // <-- Ubah v1 menjadi v2 jika Anda membuat update besar di masa depan
+const CACHE_NAME = 'edunexa-store-v2'; // <-- Ubah v1 menjadi v2 jika Anda membuat update besar di masa depan
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
